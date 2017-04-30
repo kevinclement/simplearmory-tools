@@ -12,8 +12,6 @@ var blizzardAPI = 'https://us.api.battle.net/wow/pet/?locale=en_US&apikey=kwptv2
 //     
 
 var notFound = [];
-var totalMine = 0;
-var totalTheirs = 0;
 
 // known pets that are not in the game but still show up
 var knownMissing = {
@@ -25,7 +23,7 @@ function main() {
     var { battlePets, companions } = getPetsFromUberPlayer(true);
 
     console.log('Looking for missing pets...');
-    var missingPets = findMissingPets(battlePets, companions);
+    var missingPets = findMissingPets(battlePets, companions, myBattlePets, myCompanions);
 
     for(var pet of missingPets) {
         console.log('Missing pet: http://www.wowhead.com/npc=' + pet.creatureId);
@@ -105,7 +103,6 @@ function getPetsFromUberPlayer(useCache) {
         pets = [...horde, ...alliance];
     }
 
-
     var visited = {}
     var battlePets = [];
     var companions = [];
@@ -169,7 +166,7 @@ function getMissingSiteCompanions(companions, myCompanions) {
     return missing;
 }
 
-function findMissingPets(battlePets, companions) {
+function findMissingPets(battlePets, companions, myBattlePets, myCompanions) {
     var blizzardPets = {}; // hash of pets and if they were found
     for(var pet of require('./cached/blizzardPets.7.2.json').pets) {
         blizzardPets[pet.stats.speciesId] = {pet: pet, found: false};
@@ -194,7 +191,8 @@ function findMissingPets(battlePets, companions) {
     // check which blizzard pets that our uber player didn't have at time of running (will need to handle by hand)
     var missing = [];
     for(var key of Object.keys(blizzardPets)) {
-        if(!blizzardPets[key].found  && !knownMissing[key]) {
+
+        if(!blizzardPets[key].found && !knownMissing[key]) {
             missing.push(blizzardPets[key].pet);
         }
     }
