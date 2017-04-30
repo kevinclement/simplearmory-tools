@@ -3,3 +3,4 @@ output/
 azure/
 bin/
 obj/
+.suo

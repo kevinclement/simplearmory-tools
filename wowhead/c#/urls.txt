@@ -1,0 +1,39 @@
+Pets 6.0.2
+	http://www.wowhead.com/items=15.2?filter=cr=82;crs=1;crv=50408#0-2
+Pets
+  http://www.wowhead.com/items=15.2?filter=cr=82;crs=3;crv=50400
+
+Achievements 6.0.2
+	http://www.wowhead.com/achievements=1?filter=cr=17;crs=1;crv=50408
+Achievements 5.4
+	http://www.wowhead.com/achievements=1?filter=cr=17;crs=3;crv=50400
+Achievements 5.3
+	http://www.wowhead.com/achievements=1?filter=cr=17%3Bcrs=1%3Bcrv=50200
+Achievements: 
+	http://www.wowhead.com/achievements=1.92?filter=cr=17%3A17%3Bcrs=2%3A5%3Bcrv=50004%3A50200
+
+Mounts 6.0.2
+	http://www.wowhead.com/spells=-5?filter=cr=21;crs=1;crv=50408
+Mounts 5.4:
+	http://www.wowhead.com/spells=-5?filter=cr=21;crs=3;crv=50400
+Mounts 5.3:
+	http://www.wowhead.com/spells=-5?filter=cr=21;crs=1;crv=50200
+Mounts (spells):
+	http://www.wowhead.com/spells=-5?filter=cr=21:21;crs=2:5;crv=50004:50200
+Mounts (items):
+	http://www.wowhead.com/items=15.5?filter=cr=82:82;crs=2:5;crv=50004:50200
+Mounts (<2)
+	http://www.wowhead.com/items=15.5?filter=cr=82;crs=5;crv=20001#0-2
+
+Pets (5.4)
+	http://www.wowhead.com/items=15.2?filter=cr=82;crs=3;crv=50400
+Pets (5.3)
+	http://www.wowhead.com/items=15.2?filter=cr=82;crs=3;crv=50300
+Pets (<4)
+	http://www.wowhead.com/items=15.2?filter=cr=82;crs=5;crv=40001
+Pets (4) 
+	http://www.wowhead.com/items=15.2?filter=cr=82:82;crs=2:5;crv=40001:50004
+
+
+Javascript:
+	
