@@ -9,6 +9,7 @@ var blizzardAPI = 'https://us.api.battle.net/wow/pet/?locale=en_US&apikey=kwptv2
 
 // README:
 //   Steps I did when 7.2 came output
+//     
 
 var notFound = [];
 var totalMine = 0;
@@ -20,7 +21,7 @@ var knownMissing = {
 }
 
 function main() {
-
+    var { myBattlePets, myCompanions } = getPetsFromSimpleArmory();
     var { battlePets, companions } = getPetsFromUberPlayer(true);
 
     console.log('Looking for missing pets...');
@@ -31,8 +32,8 @@ function main() {
     }
 
     // Now tha twe know our data set of all known pets, lets search site for what we're missing
-    var missingCompanions = getMissingSiteCompanions(companions);
-    var missingBattlePets = getMissingSiteBattlePets(battlePets);
+    var missingCompanions = getMissingSiteCompanions(companions, myCompanions);
+    var missingBattlePets = getMissingSiteBattlePets(battlePets, myBattlePets);
 
     // hypo: blizzard api creatureId and speciesId are unique
     // todo: when done, loop through all the ones that comes out of pets blizzard api to see what speciesid is missing
@@ -48,6 +49,42 @@ function main() {
 // Main wait section
 wait.launchFiber(main);
 
+function getPetsFromSimpleArmory() {
+    var myBattlePetsJson = require('../../simplearmory/web/app/data/battlepets.json');
+    var myCompanionsJson = require('../../simplearmory/web/app/data/pets.json');
+
+    // build up a hashtable of all of my battle pets
+    var myBattlePets = {};
+    for (var key in myBattlePetsJson) {
+        var cat = myBattlePetsJson[key];
+
+        for (var k2 in cat.subcats) {
+            var subcat = cat.subcats[k2];
+
+            for (var i in subcat.items) {
+                var pet = subcat.items[i];
+                myBattlePets[pet.creatureId] = pet;
+             }
+        }
+    }
+
+    // build up a hashtable of all of my pets
+    var myCompanions = {};
+    for (var key in myCompanionsJson) {
+        var cat = myCompanionsJson[key];
+
+        for (var k2 in cat.subcats) {
+            var subcat = cat.subcats[k2];
+
+            for (var i in subcat.items) {
+                var pet = subcat.items[i];
+                myCompanions[pet.creatureId] = pet;
+             }
+        }
+    }
+
+    return { myBattlePets: myBattlePets, myCompanions: myCompanions };
+}
 function getPetsFromUberPlayer(useCache) {
 
     // NOTE: I couldn't use the blizzard API to get pets because it doesn't have all the info the site uses, or a way to get all the info
@@ -106,30 +143,12 @@ function getPetsFromUberPlayer(useCache) {
     return { battlePets: battlePets, companions: companions};
 }
 
-function getMissingSiteBattlePets(battlePets) {
-    var myPets = require('../../simplearmory/web/app/data/battlepets.json');
-
-    // build up a hashtable of all of my pets
+function getMissingSiteBattlePets(battlePets, myBattlePets) {
     console.log('Finding missing battle pets...');
-    var allPets = {};
-    for (var key in myPets) {
-        var cat = myPets[key];
-
-        for (var k2 in cat.subcats) {
-            var subcat = cat.subcats[k2];
-
-            for (var i in subcat.items) {
-                var pet = subcat.items[i];
-                
-                allPets[pet.creatureId] = pet;
-                totalMine++;
-             }
-        }
-    }
 
     var missing = [];
     for(var pet of battlePets) {
-        if (!allPets[pet.creatureId]) {
+        if (!myBattlePets[pet.creatureId]) {
             missing.push(pet);
         }
     }
@@ -137,30 +156,12 @@ function getMissingSiteBattlePets(battlePets) {
     return missing;
 }
 
-function getMissingSiteCompanions(companions) {
-    var myPets = require('../../simplearmory/web/app/data/pets.json');
-
-    // build up a hashtable of all of my pets
+function getMissingSiteCompanions(companions, myCompanions) {
     console.log('Finding missing companions...');
-    var allPets = {};
-    for (var key in myPets) {
-        var cat = myPets[key];
-
-        for (var k2 in cat.subcats) {
-            var subcat = cat.subcats[k2];
-
-            for (var i in subcat.items) {
-                var pet = subcat.items[i];
-                
-                allPets[pet.spellid] = pet;
-                totalMine++;
-             }
-        }
-    }
 
     var missing = [];
     for(var pet of companions) {
-        if (!allPets[pet.spellId]) {
+        if (!myCompanions[pet.spellId]) {
             missing.push(pet);
         }
     }
@@ -177,7 +178,6 @@ function findMissingPets(battlePets, companions) {
     for(var pet of [...battlePets, ...companions]) {
         // check for pets that aren't in blizzards system
         if (!blizzardPets[pet.stats.speciesId]) {
-            // TODO: handle this outside this function?
             console.log('WARNING: missing pet from blizzard, species: ' + pet.stats.speciesId + ' creatureId: ' + pet.creatureId + ' icon: ' + pet.icon + ' spellId:' + pet.spellId);
             continue;
         } 
