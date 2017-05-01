@@ -13,28 +13,32 @@ var blizzardAPI = 'https://us.api.battle.net/wow/pet/?locale=en_US&apikey=kwptv2
 
 var notFound = [];
 
-// known pets that are not in the game but still show up
+// Pets that didn't show up from uber players, but I have in DB.  
+// This is because these pets are super rare or regional
 var knownMissing = {
-    
+    '15186':true,  // Murky
+    '16456':true,  // Poley
+    '23198':true,  // Lucky
+    '27346':true,  // Competitor's Souvenir
+    '35468':true,  // Onyx Panther
+    '68502':true,  // Spectral Cub
+    '114543':true, // Igneous Flameling
 }
 
 function main() {
     var { myBattlePets, myCompanions } = getPetsFromSimpleArmory();
     var { battlePets, companions } = getPetsFromUberPlayer(true);
 
-    console.log('Looking for missing pets...');
-    var missingPets = findMissingPets(battlePets, companions, myBattlePets, myCompanions);
-
-    for(var pet of missingPets) {
-        console.log('Missing pet: http://www.wowhead.com/npc=' + pet.creatureId);
+    console.log('Verifying uber list...');
+    var missingFromUberList = findMissingPets(battlePets, companions, myBattlePets, myCompanions);
+    for(var pet of missingFromUberList) {
+        console.log('  Missing pet: http://www.wowhead.com/npc=' + pet.creatureId);
     }
+    console.log('\n  Total Missing: ' + missingFromUberList.length + '\n');
 
     // Now tha twe know our data set of all known pets, lets search site for what we're missing
     var missingCompanions = getMissingSiteCompanions(companions, myCompanions);
     var missingBattlePets = getMissingSiteBattlePets(battlePets, myBattlePets);
-
-    // hypo: blizzard api creatureId and speciesId are unique
-    // todo: when done, loop through all the ones that comes out of pets blizzard api to see what speciesid is missing
 
     console.log();
     console.log('Missing companions: (' + missingCompanions.length + '/' + companions.length + ')');
@@ -83,6 +87,7 @@ function getPetsFromSimpleArmory() {
 
     return { myBattlePets: myBattlePets, myCompanions: myCompanions };
 }
+
 function getPetsFromUberPlayer(useCache) {
 
     // NOTE: I couldn't use the blizzard API to get pets because it doesn't have all the info the site uses, or a way to get all the info
@@ -110,19 +115,24 @@ function getPetsFromUberPlayer(useCache) {
     for(var pet of pets) {
 
         // Pet Object
-        //    pet.creatureId
+        //    pet.creatureId - seems to be the unique id (speciesid is showing up as 0 for some pets)
         //    pet.creatureName
         //    pet.icon
         //    pet.itemId
         //    pet.spellId
         //    pet.stats.speciesId - can use blizzard api to look it up
 
+        // if we've seen this creature just assert its the same one by checking icon
+        if (visited[pet.creatureId] && visited[pet.creatureId].icon != pet.icon) {
+            console.log("ASSERT: our assumption about unique creatureId is bad: " + pet.creatureId);
+        }
+
         // only look at one version of the collected pet, since players can have 3, no need to look at all of them
-        if (visited[pet.stats.speciesId]) {
+        if (visited[pet.creatureId]) {
             continue;
         }
         else {
-            visited[pet.stats.speciesId] = true;
+            visited[pet.creatureId] = pet;
         }
 
         // if a pet doesn't have a spellid and itemid, then its a battlepet you capture
@@ -169,31 +179,31 @@ function getMissingSiteCompanions(companions, myCompanions) {
 function findMissingPets(battlePets, companions, myBattlePets, myCompanions) {
     var blizzardPets = {}; // hash of pets and if they were found
     for(var pet of require('./cached/blizzardPets.7.2.json').pets) {
-        blizzardPets[pet.stats.speciesId] = {pet: pet, found: false};
+        blizzardPets[pet.creatureId] = {pet: pet, found: false};
     }
 
     for(var pet of [...battlePets, ...companions]) {
         // check for pets that aren't in blizzards system
-        if (!blizzardPets[pet.stats.speciesId]) {
+        if (!blizzardPets[pet.creatureId]) {
             console.log('WARNING: missing pet from blizzard, species: ' + pet.stats.speciesId + ' creatureId: ' + pet.creatureId + ' icon: ' + pet.icon + ' spellId:' + pet.spellId);
             continue;
         } 
 
-        // assert that we have unique speciesId
-        if (blizzardPets[pet.stats.speciesId].found) {
-            console.error('ASSERT: assumed unique species id but found ' + pet.stats.speciesId + ' already.');
+        // assert that we have unique creatureId
+        if (blizzardPets[pet.creatureId].found) {
+            console.error('ASSERT: assumed unique creature id but found ' + pet.creatureId + ' already.');
         }
 
          // mark that we found this pet in the master pet list
-         blizzardPets[pet.stats.speciesId].found = true;
+         blizzardPets[pet.creatureId].found = true;
     }
 
     // check which blizzard pets that our uber player didn't have at time of running (will need to handle by hand)
     var missing = [];
     for(var key of Object.keys(blizzardPets)) {
-
+        var pet = blizzardPets[key].pet;
         if(!blizzardPets[key].found && !knownMissing[key]) {
-            missing.push(blizzardPets[key].pet);
+            missing.push(pet);
         }
     }
 
