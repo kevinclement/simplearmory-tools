@@ -29,7 +29,6 @@ var knownMissing = {
     '119500':true, // Vilebrood Whelpling (can't earn it yet)
     '120830':true, // Ban-Fu, Cub of Ban-Lu (can't earn it yet)
     '121715':true, // Orphaned Felbat
-
 }
 
 function main() {
@@ -275,16 +274,8 @@ function writeToFile(missingCompanions, missingBattlePets, missingUnclassified) 
 
     myStr += 'Companions:\n';
     for(var pet of missingCompanions) {
-
-        // check to make sure pet has stuff we require
-    //     if (!pet.spellId) {
-    //         console.log('ERROR: pet doesn\'t have spellId: ' + pet.name);
-    //     }
-    //     if (!pet.itemId) {
-    //         console.log('ERROR: pet doesn\'t have itemId: ' + pet.name);
-    //     }
          if (!pet.icon) {
-             console.log('  ERROR: mount doesn\'t have icon: ' + pet.name);
+             console.log('  ERROR: pet doesn\'t have icon: ' + pet.name);
          }
 
         // TODO: how can I tell alliance vs horde, and races/classes?
@@ -304,11 +295,25 @@ function writeToFile(missingCompanions, missingBattlePets, missingUnclassified) 
         } else {
             myStr += 'http://www.wowhead.com/npc=' + pet.creatureId + '\n';
         }
-        var tmpP = `{"spellid": "${myPet.spellid}","allianceId": null,"hordeId": null,"itemId": ${myPet.itemId},"icon": "${myPet.icon}","obtainable": true,"allowableRaces": [],"allowableClasses": null}`;
+        var simpleJson = `{"spellid": "${myPet.spellid}","allianceId": null,"hordeId": null,"itemId": ${myPet.itemId},"icon": "${myPet.icon}","obtainable": true,"allowableRaces": [],"allowableClasses": null}`;
 
         //myStr += JSON.stringify(myPet, null, 2) + '\n';
 
-        myStr += tmpP + '\n';
+        myStr += simpleJson + '\n';
+    }
+    myStr += '\n';
+
+    myStr += 'Battle Pets:\n';
+    for(var pet of missingBattlePets) {
+         if (!pet.icon) {
+             console.log('  ERROR: pet doesn\'t have icon: ' + pet.name);
+         }
+         if (!pet.creatureId) {
+             console.log('  ERROR: pet doesn\'t have creatureId: ' + pet.name);
+         }
+
+        myStr += 'http://www.wowhead.com/npc=' + pet.creatureId + '\n';
+        myStr += `{"spellid": null,"allianceId": null,"hordeId": null,"itemId": null,"creatureId":"${pet.creatureId}", "icon": "${pet.icon}","obtainable": true,"allowableRaces": [],"allowableClasses": null}\n`;
     }
     myStr += '\n';
 
