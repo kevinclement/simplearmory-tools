@@ -76,7 +76,7 @@ function getPetsFromSimpleArmory() {
 
             for (var i in subcat.items) {
                 var pet = subcat.items[i];
-                myCompanions[pet.creatureId] = pet;
+                myCompanions[pet.spellid] = pet;
              }
         }
     }
