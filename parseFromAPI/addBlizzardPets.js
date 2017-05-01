@@ -9,7 +9,10 @@ var blizzardAPI = 'https://us.api.battle.net/wow/pet/?locale=en_US&apikey=kwptv2
 
 // README:
 //   Steps I did when 7.2 came output
-//     
+//     query for blizzardPets.7.2.json
+//     query for top pet players, 1 alliance, 1 horde, topPetPerson.xx.json
+//     run node addBlizzardPets.js
+//     open output/pets.missing.txt, unclassified has to be done by hand, others are just moved into proper sections
 
 // Pets that didn't show up from uber players, but I have in DB.  
 // This is because these pets are super rare or regional
