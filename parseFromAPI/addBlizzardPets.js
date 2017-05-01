@@ -3,15 +3,13 @@ var fs = require('fs');
 var wait = require('wait.for');
 var RateLimiter = require('limiter').RateLimiter;
 
-var outputFilename = './output/Pets.added.json';
+var outputFilename = './output/Pets.missing.txt';
 var limiter = new RateLimiter(1, 300);
 var blizzardAPI = 'https://us.api.battle.net/wow/pet/?locale=en_US&apikey=kwptv272nvrashj83xtxcdysghbkw6ep';
 
 // README:
 //   Steps I did when 7.2 came output
 //     
-
-var notFound = [];
 
 // Pets that didn't show up from uber players, but I have in DB.  
 // This is because these pets are super rare or regional
@@ -38,12 +36,7 @@ function main() {
     console.log('Missing battlepets:   (' + missingBattlePets.length + '/' + battlePets.length + ')');
     console.log('Missing unclassified: (' + missingUnclassified.length + ')');
 
-    // Generate list of all missing
-    // for(var pet of unknownMissing) {
-    //     console.log('  Missing pet: http://www.wowhead.com/npc=' + pet.creatureId);
-    // }
-
-    writeToFile(notFound);
+    writeToFile(missingCompanions, missingBattlePets, missingUnclassified);
 };
 
 // Main wait section
@@ -134,7 +127,20 @@ function getPetsFromUberPlayers() {
             battlePets.push(pet);
         }
         else {
-            companions.push(pet);
+            // if there isn't a item for this, we have to check if its a pet battle using the blizzard api
+            if (pet.itemId == "0") {
+
+                var isBattlePet = wait.for(getSpeciesFromBlizzard, pet.stats.speciesId);
+                if (isBattlePet) {
+                    battlePets.push(pet);
+                }
+                else {
+                    companions.push(pet);
+                }
+            }
+            else {
+                companions.push(pet);
+            }
         }
     }
 
@@ -204,31 +210,25 @@ function getMissingUnclassified(battlePets, companions) {
 }
 
 function getSpeciesFromBlizzard(speciesId, cb) {
-    var nonBattlePets = [];
+    // NOTE: to limit api calls: limiter.removeTokens(1, function() {
 
-    limiter.removeTokens(1, function() {
-        request('https://us.api.battle.net/wow/pet/species/' + speciesId + '?locale=en_US&apikey=kwptv272nvrashj83xtxcdysghbkw6ep', (error, response, body) => {
-            process.stdout.write("Got species info for '" + speciesId + "'...");
-            if (!error && response.statusCode == 200) {
-                var blizzardSpeciesObj = JSON.parse(body);
-                var source = blizzardSpeciesObj.source;
+    request('https://us.api.battle.net/wow/pet/species/' + speciesId + '?locale=en_US&apikey=kwptv272nvrashj83xtxcdysghbkw6ep', (error, response, body) => {
+        if (!error && response.statusCode == 200) {
+            var blizzardSpeciesObj = JSON.parse(body);
+            var source = blizzardSpeciesObj.source;
+            var isBattlePet = source.startsWith("Pet Battle");
 
-                var isPetBattlePet = source.startsWith("Pet Battle");
-                if (!isPetBattlePet) {
-                    nonBattlePets.push(speciesId);
-                }
-                console.log(isPetBattlePet);
-            }
-            else {
-                console.log("  ERR: " + error);
-                if (response) {
-                    console.log("  CODE: " + response.statusCode);
-                    console.log("  BODY: " + response.body);	
-                }
-            }
+            cb(null, isBattlePet);
+        }
+        else {
+            //console.log("\n  ERR: " + error);
+            //if (response) {
+            //    console.log("  CODE: " + response.statusCode);
+            //    console.log("  BODY: " + response.body);	
+            //}
 
-            cb();
-        });
+            cb(error);
+        }
     });
 }
 
@@ -253,44 +253,56 @@ function getPetsFromBlizzard() {
     });
 }
 
-function writeToFile(notFound) {
-	console.log();
+function writeToFile(missingCompanions, missingBattlePets, missingUnclassified) {
+    console.log();
 
     var myStr = '';
-    // for (var nf in notFound) {
-    //     var mount = notFound[nf];
 
-    //     // check to make sure mount has stuff we require
-    //     if (!mount.spellId) {
-    //         console.log('ERROR: mount doesn\'t have spellId: ' + mount.name);
+    myStr += 'Unclassified:\n';
+    for(var pet of missingUnclassified) {
+        myStr += '  http://www.wowhead.com/npc=' + pet.creatureId + '\n';
+    }
+    myStr += '\n';
+
+    myStr += 'Companions:\n';
+    for(var pet of missingCompanions) {
+
+        // check to make sure pet has stuff we require
+    //     if (!pet.spellId) {
+    //         console.log('ERROR: pet doesn\'t have spellId: ' + pet.name);
     //     }
-    //     if (!mount.itemId) {
-    //         console.log('ERROR: mount doesn\'t have itemId: ' + mount.name);
+    //     if (!pet.itemId) {
+    //         console.log('ERROR: pet doesn\'t have itemId: ' + pet.name);
     //     }
-    //     if (!mount.icon) {
-    //         console.log('ERROR: mount doesn\'t have icon: ' + mount.name);
-    //     }
+         if (!pet.icon) {
+             console.log('  ERROR: mount doesn\'t have icon: ' + pet.name);
+         }
 
-    //     // format it properly for me
-    //     var myMount = {
-    //         'spellid': mount.spellId,
-    //         'allianceId': null,
-    //         'hordeId': null,
-    //         'itemId': mount.itemId,
-    //         'icon': mount.icon,
-    //         'obtainable': true,
-    //         'allowableRaces': [],
-    //         'allowableClasses': null
-    //     };
+        // TODO: how can I tell alliance vs horde, and races/classes?
+        var myPet = {
+            "spellid": pet.spellId,
+            "allianceId": null,
+            "hordeId": null,
+            "itemId": pet.itemId,
+            "icon": pet.icon,
+            "obtainable": true,
+            "allowableRaces": [],
+            "allowableClasses": null
+        };
+        
+        myStr += 'http://www.wowhead.com/npc=' + pet.creatureId + '\n';
+        var tmpP = `{"spellid": ${pet.spellId},"allianceId": null,"hordeId": null,"itemId": ${pet.itemId},"icon": ${pet.icon},"obtainable": true,"allowableRaces": [],"allowableClasses": null}`;
 
-    //     myStr += JSON.stringify(myMount, null, 2) + '\n';
-    // }
+        //myStr += JSON.stringify(myPet, null, 2) + '\n';
+        myStr += tmpP + '\n';
+    }
+    myStr += '\n';
 
-    // fs.writeFile(outputFilename, myStr, function(err) {
-	//     if(err) {
-	//       console.log(err);
-	//     } else {
-	//       console.log("JSON saved to " + outputFilename);
-	//     }
-    // }); 
+    fs.writeFile(outputFilename, myStr, function(err) {
+         if(err) {
+           console.log(err);
+         } else {
+           console.log("Saved to " + outputFilename);
+         }
+    }); 
 }
