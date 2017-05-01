@@ -21,6 +21,15 @@ var knownMissing = {
     '35468':true,  // Onyx Panther
     '68502':true,  // Spectral Cub
     '114543':true, // Igneous Flameling (not out yet, summer time, when queried so uber player was missing it)
+    '14755':true,  // Tiny Green Dragon (iCoke chinese)
+    '14756':true,  // Tiny Red Dragon (iCoke chinese)
+    '15361':true,  // Murki (Korean promotional event)
+    '119498':true, // Bloodbrood Whelpling (can't earn it yet)
+    '119499':true, // Frostbrood Whelpling (can't earn it yet)
+    '119500':true, // Vilebrood Whelpling (can't earn it yet)
+    '120830':true, // Ban-Fu, Cub of Ban-Lu (can't earn it yet)
+    '121715':true, // Orphaned Felbat
+
 }
 
 function main() {
@@ -72,7 +81,7 @@ function getPetsFromSimpleArmory() {
             for (var i in subcat.items) {
                 var pet = subcat.items[i];
                 myCompanions[pet.spellid] = pet;
-             }
+            }
         }
     }
 
@@ -144,7 +153,7 @@ function getPetsFromUberPlayers() {
         }
     }
 
-    return { battlePets: battlePets, companions: companions};
+    return { battlePets: battlePets, companions: companions };
 }
 
 function getMissingSiteBattlePets(battlePets, myBattlePets) {
@@ -283,17 +292,22 @@ function writeToFile(missingCompanions, missingBattlePets, missingUnclassified) 
             "spellid": pet.spellId,
             "allianceId": null,
             "hordeId": null,
-            "itemId": pet.itemId,
+            "itemId": pet.itemId == 0 ? null : "\"" + pet.itemId + "\"",
             "icon": pet.icon,
             "obtainable": true,
             "allowableRaces": [],
             "allowableClasses": null
         };
-        
-        myStr += 'http://www.wowhead.com/npc=' + pet.creatureId + '\n';
-        var tmpP = `{"spellid": ${pet.spellId},"allianceId": null,"hordeId": null,"itemId": ${pet.itemId},"icon": ${pet.icon},"obtainable": true,"allowableRaces": [],"allowableClasses": null}`;
+
+        if (pet.itemId) {
+            myStr += 'http://www.wowhead.com/item=' + pet.itemId + '\n';
+        } else {
+            myStr += 'http://www.wowhead.com/npc=' + pet.creatureId + '\n';
+        }
+        var tmpP = `{"spellid": "${myPet.spellid}","allianceId": null,"hordeId": null,"itemId": ${myPet.itemId},"icon": "${myPet.icon}","obtainable": true,"allowableRaces": [],"allowableClasses": null}`;
 
         //myStr += JSON.stringify(myPet, null, 2) + '\n';
+
         myStr += tmpP + '\n';
     }
     myStr += '\n';
