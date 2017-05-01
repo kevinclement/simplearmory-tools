@@ -22,28 +22,26 @@ var knownMissing = {
     '27346':true,  // Competitor's Souvenir
     '35468':true,  // Onyx Panther
     '68502':true,  // Spectral Cub
-    '114543':true, // Igneous Flameling
+    '114543':true, // Igneous Flameling (not out yet, summer time, when queried so uber player was missing it)
 }
 
 function main() {
     var { myBattlePets, myCompanions } = getPetsFromSimpleArmory();
-    var { battlePets, companions } = getPetsFromUberPlayer(true);
+    var { battlePets, companions } = getPetsFromUberPlayers(true);
 
-    console.log('Verifying uber list...');
-    var missingFromUberList = findMissingPets(battlePets, companions, myBattlePets, myCompanions);
-    for(var pet of missingFromUberList) {
-        console.log('  Missing pet: http://www.wowhead.com/npc=' + pet.creatureId);
-    }
-    console.log('\n  Total Missing: ' + missingFromUberList.length + '\n');
-
-    // Now tha twe know our data set of all known pets, lets search site for what we're missing
     var missingCompanions = getMissingSiteCompanions(companions, myCompanions);
     var missingBattlePets = getMissingSiteBattlePets(battlePets, myBattlePets);
+    var missingUnclassified = getMissingUnclassified(battlePets, companions);
 
     console.log();
-    console.log('Missing companions: (' + missingCompanions.length + '/' + companions.length + ')');
-    console.log('Missing battlepets: (' + missingBattlePets.length + '/' + battlePets.length + ')');
-    console.log();
+    console.log('Missing companions:   (' + missingCompanions.length + '/' + companions.length + ')');
+    console.log('Missing battlepets:   (' + missingBattlePets.length + '/' + battlePets.length + ')');
+    console.log('Missing unclassified: (' + missingUnclassified.length + ')');
+
+    // Generate list of all missing
+    // for(var pet of unknownMissing) {
+    //     console.log('  Missing pet: http://www.wowhead.com/npc=' + pet.creatureId);
+    // }
 
     writeToFile(notFound);
 };
@@ -88,25 +86,18 @@ function getPetsFromSimpleArmory() {
     return { myBattlePets: myBattlePets, myCompanions: myCompanions };
 }
 
-function getPetsFromUberPlayer(useCache) {
+function getPetsFromUberPlayers() {
 
     // NOTE: I couldn't use the blizzard API to get pets because it doesn't have all the info the site uses, or a way to get all the info
     //  I really need spellId, and itemId, and the blizzard api doesn't give you that, it only has creatureId, and speciesId
     //  I could use speciesId to query the api for species, but that only has ability info, not item or spell info
     //  However, when you ask the blizzard api for information about what pets a character has, it contains this info.  So I just went
     //  and found the top players and queried their info off there characters.
-
-    var pets = [];
-    if (useCache) {
-
-        // curl "https://eu.api.battle.net/wow/character/die-nachtwache/Nyari?fields=pets&apikey=kwptv272nvrashj83xtxcdysghbkw6ep" | python -mjson.tool > cached\topPetPerson.horde.json
-        var horde = require('./cached/topPetPerson.horde.json').pets.collected;
-
-        // curl "https://us.api.battle.net/wow/character/Stormrage/Kyran?fields=pets&apikey=kwptv272nvrashj83xtxcdysghbkw6ep" | python -mjson.tool > cached\topPetPerson.alliance.json
-        var alliance = require('./cached/topPetPerson.alliance.json').pets.collected;
-
-        pets = [...horde, ...alliance];
-    }
+    //    curl "https://eu.api.battle.net/wow/character/die-nachtwache/Nyari?fields=pets&apikey=kwptv272nvrashj83xtxcdysghbkw6ep" | python -mjson.tool > cached\topPetPerson.horde.json
+    //    curl "https://us.api.battle.net/wow/character/Stormrage/Kyran?fields=pets&apikey=kwptv272nvrashj83xtxcdysghbkw6ep" | python -mjson.tool > cached\topPetPerson.alliance.json
+    var horde = require('./cached/topPetPerson.horde.json').pets.collected;
+    var alliance = require('./cached/topPetPerson.alliance.json').pets.collected;
+    var pets = [...horde, ...alliance];
 
     var visited = {}
     var battlePets = [];
@@ -176,7 +167,9 @@ function getMissingSiteCompanions(companions, myCompanions) {
     return missing;
 }
 
-function findMissingPets(battlePets, companions, myBattlePets, myCompanions) {
+function getMissingUnclassified(battlePets, companions) {
+    console.log('Finding unclassified pets...');
+
     var blizzardPets = {}; // hash of pets and if they were found
     for(var pet of require('./cached/blizzardPets.7.2.json').pets) {
         blizzardPets[pet.creatureId] = {pet: pet, found: false};
